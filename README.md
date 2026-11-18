@@ -6,10 +6,4 @@ Open `docs/index.html` in a browser to preview the presentation. Pick a topic or
 
 The [facilitator guide](FACILITATOR-GUIDE.md) contains the agenda and troubleshooting references. Product features can vary by plan, policy, and execution environment.
 
-## Publish with GitHub Pages
-
-1. Copy the contents of this folder, including `docs/.nojekyll`, into a **new** public GitHub repository. Do not fork or reuse the history of an existing private repository.
-2. Push the files to `main`. In **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/docs`, and save.
-3. Once deployment finishes, open the URL reported in **Settings → Pages**. For a standard project site, it is `https://<owner>.github.io/<repository>/`.
-
-No build, package installation, or service credentials are required. The Pages site serves only `docs/`. Presenter notes are part of the public HTML even when hidden on screen.
+Presentation content published at https://cajetzer.github.io/copilot_basics/
