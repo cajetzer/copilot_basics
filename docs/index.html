@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practical GitHub Copilot Workshop</title>
+  <meta name="description" content="An interactive workshop on starting, steering, and reviewing GitHub Copilot tasks across VS Code, the Copilot app, GitHub.com, and the CLI.">
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 8px 16px;
+      background: var(--cp-panel-strong);
+      border-bottom: 1px solid var(--cp-border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: auto;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 0.625rem;
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      font-weight: 800;
+    }
+
+    .button {
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .button:hover,
+    .button:focus-visible {
+      border-color: var(--cp-accent);
+      outline: none;
+    }
+
+    .button.primary {
+      background: var(--cp-accent);
+      border-color: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      font-weight: 700;
+    }
+
+    .button.primary:hover {
+      background: var(--cp-accent-hover);
+    }
+
+    .button.small {
+      padding: 6px 10px;
+      font-size: 0.875rem;
+    }
+
+    .stage {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      padding: 28px 20px 52px;
+    }
+
+    .screen {
+      display: none;
+      animation: enter 160ms ease-out;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--cp-accent);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin-bottom: 16px;
+      font-size: clamp(2.25rem, 6vw, 5.25rem);
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: clamp(1.8rem, 4vw, 3.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    p {
+      line-height: 1.55;
+    }
+
+    .lede {
+      max-width: 780px;
+      margin: 0 0 24px;
+      color: var(--cp-text-muted);
+      font-size: clamp(1rem, 2.2vw, 1.35rem);
+    }
+
+    .callout {
+      max-width: 900px;
+      margin: 24px 0;
+      padding: 20px 24px;
+      border-left: 5px solid var(--cp-accent);
+      border-radius: 0.625rem;
+      background: var(--cp-accent-soft);
+      font-size: clamp(1.15rem, 2.6vw, 1.8rem);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .topic-card {
+      min-height: 178px;
+      padding: 20px;
+      text-align: left;
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      cursor: pointer;
+      box-shadow: 0 0 2px var(--cp-highlight), 0 1px 2px var(--cp-border);
+    }
+
+    .topic-card:hover,
+    .topic-card:focus-visible {
+      border-color: var(--cp-accent);
+      outline: none;
+      transform: translateY(-2px);
+    }
+
+    .topic-card .time {
+      display: inline-block;
+      margin-bottom: 28px;
+      padding: 4px 8px;
+      border-radius: 0.625rem;
+      background: var(--cp-accent-soft);
+      color: var(--cp-accent);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .topic-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1.15rem;
+    }
+
+    .topic-card span:last-child {
+      color: var(--cp-text-muted);
+      line-height: 1.4;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+
+    .three-column {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      background: var(--cp-surface);
+      box-shadow: 0 0 2px var(--cp-highlight), 0 1px 2px var(--cp-border);
+    }
+
+    .panel.soft {
+      background: var(--cp-surface-soft);
+    }
+
+    .panel.accent {
+      border-color: var(--cp-accent);
+      background: var(--cp-accent-soft);
+    }
+
+    .big-list {
+      display: grid;
+      gap: 12px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .big-list li {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--cp-border);
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      line-height: 1.4;
+    }
+
+    .big-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .number {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .prompt {
+      position: relative;
+      margin: 12px 0;
+      padding: 18px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-bg-elevated);
+      font-family: Consolas, "Courier New", Courier, monospace;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .prompt.bad {
+      border-left: 5px solid var(--cp-danger);
+    }
+
+    .prompt.good {
+      border-left: 5px solid var(--cp-success);
+    }
+
+    .copy {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+    }
+
+    .recipe {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .recipe > div {
+      padding: 18px;
+      border-top: 4px solid var(--cp-accent);
+      border-radius: 0.625rem;
+      background: var(--cp-surface);
+      border-right: 1px solid var(--cp-border);
+      border-bottom: 1px solid var(--cp-border);
+      border-left: 1px solid var(--cp-border);
+    }
+
+    .recipe strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--cp-accent);
+    }
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .workflow {
+      padding: 18px;
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      background: var(--cp-surface);
+    }
+
+    .workflow .icon {
+      margin-bottom: 18px;
+      font-size: 1.8rem;
+    }
+
+    .workflow p {
+      margin-bottom: 0;
+      color: var(--cp-text-muted);
+    }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin: 28px 0;
+    }
+
+    .loop-step {
+      min-height: 150px;
+      padding: 16px 12px;
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      background: var(--cp-surface);
+      text-align: center;
+    }
+
+    .loop-step strong {
+      display: block;
+      margin: 12px 0 8px;
+      color: var(--cp-accent);
+    }
+
+    .loop-step span {
+      color: var(--cp-text-muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .mistake-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+    }
+
+    .mistake-table td {
+      padding: 16px;
+      background: var(--cp-surface);
+      border-top: 1px solid var(--cp-border);
+      border-bottom: 1px solid var(--cp-border);
+      vertical-align: top;
+    }
+
+    .mistake-table td:first-child {
+      width: 38%;
+      border-left: 4px solid var(--cp-danger);
+      border-radius: 0.625rem 0 0 0.625rem;
+      font-weight: 700;
+    }
+
+    .mistake-table td:last-child {
+      border-right: 1px solid var(--cp-border);
+      border-radius: 0 0.625rem 0.625rem 0;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .mode {
+      min-height: 220px;
+      padding: 22px;
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      background: var(--cp-surface);
+    }
+
+    .mode strong {
+      color: var(--cp-accent);
+      font-size: 1.4rem;
+    }
+
+    .mode .use {
+      display: block;
+      margin: 16px 0 8px;
+      font-weight: 700;
+    }
+
+    .demo-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .demo-toolbar .button.active {
+      background: var(--cp-accent);
+      border-color: var(--cp-accent);
+      color: var(--cp-accent-fg);
+    }
+
+    .demo-step {
+      display: none;
+    }
+
+    .demo-step.active {
+      display: block;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 0;
+      padding: 18px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-bg-elevated);
+      color: var(--cp-text);
+      font-family: Consolas, "Courier New", Courier, monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", Courier, monospace;
+    }
+
+    .demo-caption {
+      margin-top: 12px;
+      color: var(--cp-text-muted);
+    }
+
+    .notes {
+      display: none;
+      margin-top: 24px;
+      padding: 16px 18px;
+      border: 1px dashed var(--cp-border-strong);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+      color: var(--cp-text-muted);
+    }
+
+    .notes.visible {
+      display: block;
+    }
+
+    .notes strong {
+      color: var(--cp-text);
+    }
+
+    .footer-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--cp-border);
+    }
+
+    .question {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: var(--cp-accent-soft);
+      color: var(--cp-text);
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .status {
+      min-width: 72px;
+      color: var(--cp-text-muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      border: 1px solid var(--cp-border-strong);
+      border-radius: 0.375rem;
+      background: var(--cp-surface-soft);
+      font-family: Consolas, "Courier New", Courier, monospace;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 800px) {
+      .two-column,
+      .three-column,
+      .mode-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .recipe {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .loop {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .topbar .optional-label {
+        display: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .stage {
+        padding: 22px 14px 40px;
+      }
+
+      .recipe,
+      .loop {
+        grid-template-columns: 1fr;
+      }
+
+      .brand span:last-child,
+      .status {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">C</span>
+        <span>Copilot Workshop</span>
+      </div>
+      <button class="button small" id="homeButton" type="button">Home</button>
+      <button class="button small" id="previousButton" type="button">← <span class="optional-label">Previous</span></button>
+      <span class="status" id="status">Home</span>
+      <button class="button small" id="nextButton" type="button"><span class="optional-label">Next</span> →</button>
+      <button class="button small" id="notesButton" type="button">Presenter notes</button>
+    </header>
+
+    <main class="stage">
+      <section class="screen active" data-screen="home">
+        <p class="eyebrow">Practical GitHub Copilot Workshop</p>
+        <h1>Questions first. Useful basics on demand.</h1>
+        <p class="lede">Choose a topic to explore practical ways to start, guide, and review Copilot work across the surfaces you already use.</p>
+        <div class="callout">A practical path: Start where the work is → use its context → brief the outcome → steer → review.</div>
+
+        <div class="topic-grid">
+          <button class="topic-card" type="button" data-go="mental-model">
+            <span class="time">5 minutes</span>
+            <strong>Start where the work already is</strong>
+            <span>Choose VS Code, the Copilot app, GitHub.com, or CLI based on the task in front of you.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="better-prompts">
+            <span class="time">10 minutes</span>
+            <strong>Use the context that surface already has</strong>
+            <span>Files, selections, issues, pull requests, repositories, branches, and execution environments.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="starter-workflows">
+            <span class="time">10 minutes</span>
+            <strong>Good first agent tasks</strong>
+            <span>Safe early tasks that teach the controls without implying a capability ceiling.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="trust-loop">
+            <span class="time">10 minutes</span>
+            <strong>Steer and review the work</strong>
+            <span>The same control pattern, with useful differences across each surface.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="mistakes">
+            <span class="time">5–10 minutes</span>
+            <strong>Common early mistakes</strong>
+            <span>Fast troubleshooting for developers who tried Copilot and received weak results.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="modes">
+            <span class="time">10 minutes</span>
+            <strong>Choose how to collaborate</strong>
+            <span>Work closely, plan first, or run autonomously based on task clarity and risk.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="demo">
+            <span class="time">10–15 minutes</span>
+            <strong>Same task, four surfaces</strong>
+            <span>Run one practical tag-parser workflow from VS Code, the Copilot app, GitHub.com, or CLI.</span>
+          </button>
+          <button class="topic-card" type="button" data-go="closing">
+            <span class="time">2 minutes</span>
+            <strong>Seven habits to leave with</strong>
+            <span>A simple closing screen for the end of any combination of topics.</span>
+          </button>
+        </div>
+
+        <div class="notes">
+          <strong>How to use this:</strong> Start with audience questions, then choose the card that best fits the discussion. Press <span class="kbd">Home</span> to return here, or use the arrow keys to present the topics in order.
+        </div>
+      </section>
+
+      <section class="screen" data-screen="mental-model">
+        <p class="eyebrow">Choose the entry point</p>
+        <h2>Start where the work already is.</h2>
+        <div class="workflow-grid">
+          <div class="workflow">
+            <div class="icon">⌨️</div>
+            <h3>VS Code</h3>
+            <p>A local project is open and the relevant file, selection, error, test, or source-control diff is nearby.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🧭</div>
+            <h3>Copilot app</h3>
+            <p>You want a dedicated agent workspace, several repositories, connected browser/terminal work, or longer-running sessions.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🐙</div>
+            <h3>GitHub.com</h3>
+            <p>The work starts from an issue, pull request, file, or unfamiliar repository and no local checkout is needed yet.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">›_</div>
+            <h3>Copilot CLI</h3>
+            <p>The task is terminal-centered, depends on local commands, or fits a repeatable command-line workflow.</p>
+          </div>
+        </div>
+        <div class="callout">The surface is the entry point. The session and execution environment determine where the work continues.</div>
+        <div class="question">Where does this task already live—code, an issue, a pull request, a terminal, or a longer-running workspace?</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> Recommend the closest useful surface, not your personal favorite. Do not imply that the chosen client determines where commands run. VS Code, the app, and CLI can work with local or supported cloud/remote environments; GitHub.com naturally starts from hosted repository context.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="better-prompts">Use the available context →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="better-prompts">
+        <p class="eyebrow">Supply useful context</p>
+        <h2>Use what the surface already knows—then fill the gaps.</h2>
+        <div class="workflow-grid">
+          <div class="workflow">
+            <h3>VS Code</h3>
+            <p>Use the open repository, selected code, current editor, diagnostics, tests, and referenced files.</p>
+          </div>
+          <div class="workflow">
+            <h3>Copilot app</h3>
+            <p>Select the repository and environment; attach screenshots, documents, or other supporting artifacts.</p>
+          </div>
+          <div class="workflow">
+            <h3>GitHub.com</h3>
+            <p>Start from the issue, pull request, file, repository, and branch so the page context comes with the request.</p>
+          </div>
+          <div class="workflow">
+            <h3>Copilot CLI</h3>
+            <p>Start at the repository root and reference files, issue numbers, attachments, and local command output.</p>
+          </div>
+        </div>
+
+        <div class="callout">If the code is unfamiliar, ask Copilot to inspect the implementation and tests before prescribing a solution.</div>
+        <h3>Then give one task brief</h3>
+        <div class="recipe">
+          <div><strong>Outcome</strong><span>What should be true when the task is complete?</span></div>
+          <div><strong>Scope</strong><span>Which behavior, issue, or area is relevant?</span></div>
+          <div><strong>Constraints</strong><span>What must remain unchanged or require approval?</span></div>
+          <div><strong>Evidence</strong><span>Which checks or observable behavior prove completion?</span></div>
+        </div>
+
+        <div class="two-column">
+          <div>
+            <h3>Too vague</h3>
+            <div class="prompt bad">Fix this function.<button class="button small copy" type="button" data-copy="Fix this function.">Copy</button></div>
+          </div>
+          <div>
+            <h3>Agent-ready brief</h3>
+            <div class="prompt good">Update the tag parser so it trims whitespace and ignores empty entries. Preserve order and all other existing behavior. Inspect the current implementation and tests before editing. Add focused coverage for whitespace, consecutive delimiters, and empty input, then run the narrowest relevant test command. Stop and ask if the current contract is ambiguous.<button class="button small copy" type="button" data-copy="Update the tag parser so it trims whitespace and ignores empty entries. Preserve order and all other existing behavior. Inspect the current implementation and tests before editing. Add focused coverage for whitespace, consecutive delimiters, and empty input, then run the narrowest relevant test command. Stop and ask if the current contract is ambiguous.">Copy</button></div>
+          </div>
+        </div>
+
+        <div class="question">What does your preferred surface already know, and what would Copilot still have to guess?</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> The task brief should not change just because the client changes. The useful difference is how context enters the session: selected code in VS Code, project and attachments in the app, page/repository context on GitHub.com, or working directory and command output in CLI.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="demo">Use the built-in demo →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="starter-workflows">
+        <p class="eyebrow">Learn the controls</p>
+        <h2>Good first agent tasks are bounded, useful, and easy to verify.</h2>
+        <div class="workflow-grid">
+          <div class="workflow">
+            <div class="icon">🔎</div>
+            <h3>Map a code path</h3>
+            <p>Start from GitHub.com or the app for an unfamiliar issue, or beside the code in VS Code.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🧭</div>
+            <h3>Fix a bounded bug</h3>
+            <p>VS Code or CLI is useful when reproduction depends on the local checkout, services, or commands.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🧪</div>
+            <h3>Add focused coverage</h3>
+            <p>Work beside tests in VS Code, use CLI for repeatable commands, or delegate a well-defined cloud task.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🛠️</div>
+            <h3>Implement a small feature</h3>
+            <p>Plan from an issue on GitHub.com, coordinate in the app, or work interactively in VS Code or CLI.</p>
+          </div>
+          <div class="workflow">
+            <div class="icon">🔬</div>
+            <h3>Review existing changes</h3>
+            <p>Use GitHub.com for PR workflow, VS Code for local inspection, or the app/CLI for agentic review.</p>
+          </div>
+        </div>
+
+        <div class="prompt good">Inspect the authentication flow in this repository. Identify the entry points, key files, existing tests, and any repository instructions that affect changes in this area. Do not edit files yet.<button class="button small copy" type="button" data-copy="Inspect the authentication flow in this repository. Identify the entry points, key files, existing tests, and any repository instructions that affect changes in this area. Do not edit files yet.">Copy</button></div>
+        <div class="callout">These are training wheels for learning control and review—not the limit of the harness.</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> Ask attendees to choose one card. Explain that the same harness can later plan complex features, delegate work to the cloud, split independent tasks across subagents, and connect to external systems.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="trust-loop">Show the safe workflow →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="trust-loop">
+        <p class="eyebrow">Control the session</p>
+        <h2>The control pattern is shared; the review surface differs.</h2>
+        <div class="loop">
+          <div class="loop-step"><span class="number">1</span><strong>Orient</strong><span>Context, repository, branch, environment</span></div>
+          <div class="loop-step"><span class="number">2</span><strong>Choose</strong><span>Collaborate, plan first, or run autonomously</span></div>
+          <div class="loop-step"><span class="number">3</span><strong>Permit</strong><span>Approve only the useful scope</span></div>
+          <div class="loop-step"><span class="number">4</span><strong>Steer</strong><span>Correct direction while it works</span></div>
+          <div class="loop-step"><span class="number">5</span><strong>Inspect</strong><span>Open the actual changes and output</span></div>
+          <div class="loop-step"><span class="number">6</span><strong>Recover</strong><span>Stop, revise, or rewind where supported</span></div>
+        </div>
+
+        <div class="workflow-grid">
+          <div class="workflow">
+            <h3>VS Code</h3>
+            <p>Send a follow-up, inspect editor changes and source control, run local tests, and review diagnostics.</p>
+          </div>
+          <div class="workflow">
+            <h3>Copilot app</h3>
+            <p>Steer the session, inspect workspace changes, and use connected terminal or browser views for validation.</p>
+          </div>
+          <div class="workflow">
+            <h3>GitHub.com</h3>
+            <p>Follow the session log, send a steering prompt, inspect proposed changes, and review the pull request.</p>
+          </div>
+          <div class="workflow">
+            <h3>Copilot CLI</h3>
+            <p>Approve or deny tools, steer with another prompt, interrupt work, inspect the diff, and request review.</p>
+          </div>
+        </div>
+
+        <div class="prompt good">Keep duplicate tags. Do not add input-type validation in this change.<button class="button small copy" type="button" data-copy="Keep duplicate tags. Do not add input-type validation in this change.">Copy</button></div>
+        <div class="callout">Correct the direction early. Do not wait for a polished but incorrect result.</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> Teach the control pattern rather than memorized buttons: steer, stop, inspect, and verify. Use the current surface's natural diff, session log, terminal, tests, or pull request only where it adds practical value.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="mistakes">Troubleshoot weak results →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="mistakes">
+        <p class="eyebrow">Fast troubleshooting</p>
+        <h2>Most early failures are missing context, weak boundaries, or late review.</h2>
+        <table class="mistake-table">
+          <tbody>
+            <tr><td>Started without the real artifact</td><td>Open or attach the file, issue, pull request, error, screenshot, or repository context.</td></tr>
+            <tr><td>Switched surfaces without a reason</td><td>Stay where the work already is unless another client offers a genuinely better next step.</td></tr>
+            <tr><td>Vague outcome</td><td>Add scope, constraints, and evidence instead of prescribing random implementation details.</td></tr>
+            <tr><td>Wrong autonomy level</td><td>Collaborate for unfamiliar work, plan first for ambiguity, and automate only a well-defined task.</td></tr>
+            <tr><td>Agent is heading the wrong way</td><td>Steer immediately, narrow the action, or stop the task instead of waiting.</td></tr>
+            <tr><td>Only reviewed the summary</td><td>Open the real diff, session log, checks, tests, and pull request changes.</td></tr>
+            <tr><td>Assumed every session follows every device</td><td>Choose a cloud session for device independence; local remote control still depends on the original machine.</td></tr>
+          </tbody>
+        </table>
+        <div class="question">Was your last weak result caused by missing context, unclear evidence, the wrong collaboration style, or insufficient review?</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> Keep the tone nonjudgmental. Most corrections do not require a better model or a different client; they require the real context, a clearer brief, earlier steering, or better verification.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="better-prompts">Return to the prompt recipe →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="modes">
+        <p class="eyebrow">Choose the collaboration style</p>
+        <h2>Task clarity and risk matter more than the client.</h2>
+        <div class="mode-grid">
+          <div class="mode">
+            <strong>Collaborate closely</strong>
+            <span class="use">Use when</span>
+            <p>The code is unfamiliar, local behavior matters, or you expect to make decisions while work proceeds.</p>
+          </div>
+          <div class="mode">
+            <strong>Plan first</strong>
+            <span class="use">Use when</span>
+            <p>The work spans files, services, or repositories, or requirements and architecture need agreement before implementation.</p>
+          </div>
+          <div class="mode">
+            <strong>Run autonomously</strong>
+            <span class="use">Use when</span>
+            <p>The outcome and evidence are well defined and the local, remote, or cloud environment is appropriately controlled.</p>
+          </div>
+        </div>
+        <div class="workflow-grid">
+          <div class="workflow">
+            <h3>VS Code / CLI</h3>
+            <p>Natural for close local collaboration when the checkout, commands, services, or debugger matter.</p>
+          </div>
+          <div class="workflow">
+            <h3>GitHub.com</h3>
+            <p>Natural for planning or delegating work that begins from an issue, pull request, or repository.</p>
+          </div>
+          <div class="workflow">
+            <h3>Copilot app</h3>
+            <p>Natural for coordinating local, remote, or cloud sessions and several workstreams in one workspace.</p>
+          </div>
+        </div>
+        <div class="callout">The surface controls how you interact. The environment controls where work runs and whether it depends on your device.</div>
+        <div class="panel soft">
+          <h3>Beyond the first task</h3>
+          <p>Move into custom instructions, skills, custom agents, MCP and connectors, plugins, multiple sessions, cloud delegation, parallel work, code review, Agent Merge, and automations.</p>
+        </div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> Avoid mapping these concepts to one set of labels or buttons. Different surfaces expose controls differently, but the choice is still collaborative work, plan-before-change, or autonomous execution.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="demo">Show the no-prep demo →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="demo">
+        <p class="eyebrow">Same task, four surfaces</p>
+        <h2>One practical workflow can start wherever the work already is.</h2>
+        <p class="lede">Follow a fictional tag-parser task to compare starting context, then use the same brief, steering, and review steps on each surface.</p>
+
+        <div class="demo-toolbar" role="tablist" aria-label="Demo steps">
+          <button class="button active" type="button" data-demo="demo-start">1. Pick surface</button>
+          <button class="button" type="button" data-demo="demo-explain">2. Supplied context</button>
+          <button class="button" type="button" data-demo="demo-plan">3. Brief task</button>
+          <button class="button" type="button" data-demo="demo-implement">4. Steer</button>
+          <button class="button" type="button" data-demo="demo-test">5. Review</button>
+          <button class="button" type="button" data-demo="demo-review">6. Continue</button>
+        </div>
+
+        <div class="demo-step active" data-demo-step="demo-start">
+          <h3>The issue: tag parsing preserves whitespace and empty entries</h3>
+          <div class="workflow-grid">
+            <div class="workflow">
+              <h3>VS Code</h3>
+              <p>The repository is open. <code>parseTags.js</code> and its test file are in the editor.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot app</h3>
+              <p>The tag-service project is selected with a local or cloud execution environment.</p>
+            </div>
+            <div class="workflow">
+              <h3>GitHub.com</h3>
+              <p>An issue describing the parser bug is open against the intended repository and branch.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot CLI</h3>
+              <p>The terminal is at the tag-service repository root with local commands available.</p>
+            </div>
+          </div>
+          <div class="callout">Choose the surface that already has the strongest starting context or the environment the task needs.</div>
+        </div>
+
+        <div class="demo-step" data-demo-step="demo-explain">
+          <h3>What the surface supplies—and what still needs stating</h3>
+          <div class="workflow-grid">
+            <div class="workflow">
+              <h3>VS Code</h3>
+              <p>Open files, selected code, editor diagnostics, repository context, and referenced tests.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot app</h3>
+              <p>Selected project, repository, environment, session history, and attached artifacts.</p>
+            </div>
+            <div class="workflow">
+              <h3>GitHub.com</h3>
+              <p>Issue text, repository, branch, file, or pull request page context.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot CLI</h3>
+              <p>Working directory, repository instructions, referenced paths, issue numbers, and command output.</p>
+            </div>
+          </div>
+          <div class="prompt good">Inspect the tag parser and its existing tests. Explain the current behavior and likely edge cases. Do not edit files yet.<button class="button small copy" type="button" data-copy="Inspect the tag parser and its existing tests. Explain the current behavior and likely edge cases. Do not edit files yet.">Copy</button></div>
+          <div class="two-column">
+            <pre><code>export function parseTags(input) {
+  return input.split(",");
+}</code></pre>
+            <pre><code>parseTags("alpha, beta,,gamma")
+
+// ["alpha", " beta", "", "gamma"]</code></pre>
+          </div>
+          <p class="demo-caption">The prompt is shared. The useful difference is how the current client supplies the parser, tests, issue, repository, and environment context.</p>
+        </div>
+
+        <div class="demo-step" data-demo-step="demo-plan">
+          <h3>Use one brief from every surface</h3>
+          <div class="prompt good">Update the tag parser so it trims whitespace and ignores empty entries. Preserve order and all other existing behavior. Add focused tests for whitespace, consecutive delimiters, and empty input, then run the narrowest relevant test command. Stop and ask if the current contract is ambiguous.<button class="button small copy" type="button" data-copy="Update the tag parser so it trims whitespace and ignores empty entries. Preserve order and all other existing behavior. Add focused tests for whitespace, consecutive delimiters, and empty input, then run the narrowest relevant test command. Stop and ask if the current contract is ambiguous.">Copy</button></div>
+          <div class="recipe">
+            <div><strong>Outcome</strong><span>Trim and remove empty entries</span></div>
+            <div><strong>Scope</strong><span>The parser behavior and focused tests</span></div>
+            <div><strong>Constraints</strong><span>Preserve order and other behavior</span></div>
+            <div><strong>Evidence</strong><span>Run relevant tests and report the result</span></div>
+          </div>
+          <div class="callout">VS Code may begin from a selection, GitHub.com from an issue, the app from a project, and CLI from a working directory. The task brief remains the same.</div>
+        </div>
+
+        <div class="demo-step" data-demo-step="demo-implement">
+          <h3>Correct an assumption before the task finishes</h3>
+          <div class="prompt good">Keep duplicate tags. Do not add input-type validation in this change.<button class="button small copy" type="button" data-copy="Keep duplicate tags. Do not add input-type validation in this change.">Copy</button></div>
+          <div class="workflow-grid">
+            <div class="workflow">
+              <h3>VS Code</h3>
+              <p>Send the follow-up in the active agent session and inspect the updated editor changes.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot app</h3>
+              <p>Steer the project session while monitoring workspace changes and tool activity.</p>
+            </div>
+            <div class="workflow">
+              <h3>GitHub.com</h3>
+              <p>Add the follow-up below the cloud session log before reviewing the proposed changes.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot CLI</h3>
+              <p>Enter a steering prompt while work is active and approve or reject tool requests narrowly.</p>
+            </div>
+          </div>
+          <h3>Agent-produced change</h3>
+          <pre><code>export function parseTags(input) {
+  return input
+    .split(",")
+    .map((tag) =&gt; tag.trim())
+    .filter(Boolean);
+}</code></pre>
+          <p class="demo-caption">The interaction differs; the engineering habit is the same: steer early instead of reviewing an avoidable mistake later.</p>
+        </div>
+
+        <div class="demo-step" data-demo-step="demo-test">
+          <div class="two-column">
+            <div>
+              <h3>Focused tests added</h3>
+              <pre><code>describe("parseTags", () =&gt; {
+  it("parses normal input", () =&gt; {
+    expect(parseTags("alpha,beta"))
+      .toEqual(["alpha", "beta"]);
+  });
+
+  it("trims and ignores empty entries", () =&gt; {
+    expect(parseTags("alpha, beta,,gamma"))
+      .toEqual(["alpha", "beta", "gamma"]);
+  });
+
+  it("returns an empty array for empty input", () =&gt; {
+    expect(parseTags(""))
+      .toEqual([]);
+  });
+});</code></pre>
+            </div>
+            <div class="panel">
+              <h3>Illustrative test report</h3>
+              <pre><code>Command:
+npm test -- parseTags
+
+Result:
+3 tests passed
+
+Unverified:
+Full test suite not run</code></pre>
+            </div>
+          </div>
+          <div class="workflow-grid">
+            <div class="workflow">
+              <h3>VS Code</h3>
+              <p>Review the editor/source-control diff, diagnostics, tests, and local runtime when relevant.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot app</h3>
+              <p>Review workspace changes, terminal output, browser validation, and the pull request lifecycle.</p>
+            </div>
+            <div class="workflow">
+              <h3>GitHub.com</h3>
+              <p>Review the session log, commits, pull request diff, checks, and Copilot code review.</p>
+            </div>
+            <div class="workflow">
+              <h3>Copilot CLI</h3>
+              <p>Open the diff and review views, then run normal command-line checks.</p>
+            </div>
+          </div>
+          <div class="prompt good">Report the commands and tools you used, the results, assumptions you made, and anything you could not verify.<button class="button small copy" type="button" data-copy="Report the commands and tools you used, the results, assumptions you made, and anything you could not verify.">Copy</button></div>
+          <p class="demo-caption">The summary is not the review. Open the diff and inspect the actual change before committing.</p>
+        </div>
+
+        <div class="demo-step" data-demo-step="demo-review">
+          <h3>Continue the same cloud session where the next step is easiest</h3>
+          <div class="workflow-grid">
+            <div class="panel">
+              <h3>1. GitHub.com</h3>
+              <p>Start from the issue and launch the task in a cloud environment.</p>
+            </div>
+            <div class="panel">
+              <h3>2. GitHub Mobile</h3>
+              <p>Check progress and steer the same session while away from the desk.</p>
+            </div>
+            <div class="panel">
+              <h3>3. Copilot app</h3>
+              <p>Inspect session history, workspace changes, and the connected development workflow.</p>
+            </div>
+            <div class="panel">
+              <h3>4. VS Code or CLI</h3>
+              <p>Continue the same cloud session for code-local or terminal-centered finishing work.</p>
+            </div>
+          </div>
+          <div class="panel accent">
+            <h3>Local-session caveat</h3>
+            <ul>
+              <li>Synced local history is not the same as cloud execution.</li>
+              <li>Remote control can make a running local session steerable from web or mobile.</li>
+              <li>The original machine must remain online for remotely controlled local work.</li>
+            </ul>
+          </div>
+          <div class="callout">Choose a cloud environment when the task must keep running independently of the original device.</div>
+        </div>
+
+        <div class="notes">
+          <strong>Presenter cue:</strong> Do not promise that every local session seamlessly moves between devices. Cloud-session continuity, synced local history, and remote control are distinct capabilities.
+        </div>
+        <div class="footer-nav">
+          <button class="button" type="button" data-go="home">Choose another topic</button>
+          <button class="button primary" type="button" data-go="closing">Close the session →</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="closing">
+        <p class="eyebrow">Closing recap</p>
+        <h2>Seven habits for useful Copilot outcomes on any surface</h2>
+        <ul class="big-list">
+          <li><span class="number">1</span><span><strong>Start where the work already is.</strong></span></li>
+          <li><span class="number">2</span><span><strong>Use the context the surface already supplies.</strong></span></li>
+          <li><span class="number">3</span><span><strong>Brief outcome, scope, constraints, and evidence.</strong></span></li>
+          <li><span class="number">4</span><span><strong>Choose collaboration and autonomy deliberately.</strong></span></li>
+          <li><span class="number">5</span><span><strong>Steer early when an assumption is wrong.</strong></span></li>
+          <li><span class="number">6</span><span><strong>Review actual changes, commands, tests, and unknowns.</strong></span></li>
+          <li><span class="number">7</span><span><strong>Use a cloud session when the work must follow you across devices.</strong></span></li>
+        </ul>
+        <div class="callout">The best surface is the one that already has the context and controls your next step needs.</div>
+        <div class="question">Final question: What task will you try, and where does that work already live?</div>
+        <div class="notes">
+          <strong>Presenter cue:</strong> End here regardless of which cards you used. Invite one or two answers, then return to open Q&amp;A if time remains.
+        </div>
+        <div class="footer-nav">
+          <button class="button primary" type="button" data-go="home">Back to topic picker</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const screens = Array.from(document.querySelectorAll(".screen"));
+      const screenIds = screens.map((screen) => screen.dataset.screen);
+      let current = "home";
+      let notesVisible = false;
+
+      const status = document.getElementById("status");
+      const homeButton = document.getElementById("homeButton");
+      const previousButton = document.getElementById("previousButton");
+      const nextButton = document.getElementById("nextButton");
+      const notesButton = document.getElementById("notesButton");
+
+      function showScreen(id) {
+        if (!screenIds.includes(id)) return;
+        current = id;
+        screens.forEach((screen) => {
+          const active = screen.dataset.screen === id;
+          screen.classList.toggle("active", active);
+          if (active) {
+            screen.querySelectorAll(".notes").forEach((note) => {
+              note.classList.toggle("visible", notesVisible);
+            });
+          }
+        });
+        const index = screenIds.indexOf(id);
+        status.textContent = id === "home" ? "Home" : `${index} / ${screenIds.length - 1}`;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (window.location.hash !== `#${id}`) {
+          history.replaceState(null, "", `#${id}`);
+        }
+      }
+
+      function move(delta) {
+        const index = screenIds.indexOf(current);
+        const nextIndex = Math.min(screenIds.length - 1, Math.max(0, index + delta));
+        showScreen(screenIds[nextIndex]);
+      }
+
+      document.querySelectorAll("[data-go]").forEach((button) => {
+        button.addEventListener("click", () => showScreen(button.dataset.go));
+      });
+
+      document.querySelectorAll("[data-demo]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const target = button.dataset.demo;
+          document.querySelectorAll("[data-demo]").forEach((candidate) => {
+            candidate.classList.toggle("active", candidate === button);
+          });
+          document.querySelectorAll("[data-demo-step]").forEach((step) => {
+            step.classList.toggle("active", step.dataset.demoStep === target);
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const original = button.textContent;
+          try {
+            await navigator.clipboard.writeText(button.dataset.copy);
+            button.textContent = "Copied";
+          } catch {
+            button.textContent = "Select text";
+          }
+          window.setTimeout(() => {
+            button.textContent = original;
+          }, 1400);
+        });
+      });
+
+      homeButton.addEventListener("click", () => showScreen("home"));
+      previousButton.addEventListener("click", () => move(-1));
+      nextButton.addEventListener("click", () => move(1));
+      notesButton.addEventListener("click", () => {
+        notesVisible = !notesVisible;
+        notesButton.textContent = notesVisible ? "Hide notes" : "Presenter notes";
+        document.querySelectorAll(".screen.active .notes").forEach((note) => {
+          note.classList.toggle("visible", notesVisible);
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "PageDown") move(1);
+        if (event.key === "ArrowLeft" || event.key === "PageUp") move(-1);
+        if (event.key === "Home" || event.key === "Escape") showScreen("home");
+        if (event.key.toLowerCase() === "n") notesButton.click();
+      });
+
+      function showLinkedScreen() {
+        const id = window.location.hash.slice(1);
+        showScreen(screenIds.includes(id) ? id : "home");
+      }
+
+      window.addEventListener("hashchange", showLinkedScreen);
+      showLinkedScreen();
+    })();
+  </script>
+</body>
+</html>
